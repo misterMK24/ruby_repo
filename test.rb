@@ -4,23 +4,34 @@ class CPinfo
   def initialize(filename)
     @filename = filename
   end
-
+=begin
   def file_open
-    @file_opened = File.open(@filename, "r")
+    File.open(@filename, "r") do |file|
+      file_cpinfo = file.read
+    end
   end
+=end
 
   def topology_cluster
-    @file_opened.each_line.with_index do |line, index|
-      if line.include? "gw_cluster" or index
-        index = true
-        if line.include? ":HA_mode"
-          break
-        elsif line.include? ":ClassName"
-          puts "cluster name is #{line.scan(/(\w+)/)}"
+    File.open(@filename, "r") do |file|
+      index = nil
+
+      file.each_line do |line|
+        if line.include? ":ClassName (gateway_cluster)"
+          index = true
+        elsif index
+          while line.include? ":manual_encdomain"
+            if line.include? "ipaddr"
+              puts "#{line}"
+            else
+              next
+            end
+          end
+        else
+          next
         end
       end
     end
-    @file_opened.close
   end
 
     # schema for searching interfaces from topology - cluster and physical i-faces
@@ -29,7 +40,7 @@ class CPinfo
 
 
 instance_1 = CPinfo.new("//home//asd//ruby_theory//cpinfo_chepucks.info")
-instance_1.file_open
+# instance_1.file_open
 instance_1.topology_cluster
 # instance_1.file_open
 # instance_1.topology_cluster

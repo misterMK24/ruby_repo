@@ -1,0 +1,21 @@
+class TestAttr
+  attr :a1, :a2
+
+  def initialize (a1, a2)
+    @a1, @a2 = a1, a2
+  end
+=begin
+  def inc_them
+    self.a1 += 1
+    self.a2 += 1
+  end
+=end
+  def print_them
+    puts "#{a1} , #{a2}"
+  end
+
+end
+
+inst1 = TestAttr.new(2, 2)
+# inst1.inc_them
+puts "#{inst1.instance_variable_get("@a1")}"

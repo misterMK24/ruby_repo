@@ -1,5 +1,7 @@
 class CPinfo
 
+  Cluster = Struct.new("Cluster", :ClassName, :name, :cluster_members, :Name, :interfaces)
+  # cluster_1 = Cluster.new
 
   def initialize(filename)
     @filename = filename
@@ -9,33 +11,37 @@ class CPinfo
     @file_opened = File.open(@filename, "r")
   end
 
-  def topology_cluster
+  def find_cluster_names
     index = nil
+    some_str = ""
     @file_opened.each_line do |line|
-      if line.include? ":ClassName (gateway_cluster)"
-        gw_name = line.scan(%r'\(\w+\)')
-        puts "#{gw_name[0].gsub(%r'\W', "")}"
+      if line.index(/:cluster_members/)
+        some_str << line
         index = true
       elsif index
-        if line.include? ":HA_mode"
+        unless line.index(":interfaces")
+          some_str << line
+        else
           break
-        elsif line.include? ":name"
-          some_str = line.scan(%r'\(\w+\)')
-          puts "cluster name is #{some_str[0].gsub(%r'\W', "")}"
         end
       end
     end
+    puts "#{some_str}"
     @file_opened.close
+
+    gwname = some_str.match(%r'#_/w+')
+
+
   end
 
-    # schema for searching interfaces from topology - cluster and physical i-faces
-  end
+end
+
 
 # //home//asd//ruby_theory//cpinfo_chepucks.info - for Linux
 # C:\\_ruby\\cpinfo_chepucks.info - for Windows
 
-instance_1 = CPinfo.new("C:\\_ruby\\cpinfo_chepucks.info")
+instance_1 = CPinfo.new("C:\\_ruby\\cpinfo.txt")
 instance_1.file_open
-instance_1.topology_cluster
+instance_1.find_cluster_names
 # instance_1.file_open
 # instance_1.topology_cluster

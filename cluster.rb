@@ -20,17 +20,13 @@ class NewClass
     some_str_tmp = whole_file.scan(/:ClassName[\s]{1}[(]{1}gateway_cluster[)]{1}[\S\s]+?:edges/)
     cluster_names = Array.new(some_str_tmp.length, " ")
     cluster_members = Array.new
-    # puts some_str_tmp.length, cluster_names
-    
+
     some_str_tmp.each_with_index do |cluster, i|
       cluster = cluster.scan(/:name[\S\s]+?:edges/)[0]
       cluster_name = cluster.match(/:name[\s]{1}[(][\S\s]+?[)]/)[0].sub!(/:name[\s]{1}[(]/, "").sub!(/[)]{1}/, "")
       cluster_members << cluster.scan(/:Name[\s]{1}[()][^int][\S\s]+?[)]{1}/)
       cluster_names[i] = cluster_name
-      # cluster_names[i] << cluster_members[i]
-      # cluster_names[i] << cluster_members[i+1]
     end
-#    puts "#{cluster_members.size == cluster_names.size}"
 
     cluster_members.each do |line|
       line.each do |subline|
@@ -38,9 +34,8 @@ class NewClass
       end
     end
 
-
     final_array_new = cluster_names.zip(cluster_members).flatten
-    puts cluster_names
+    puts final_array_new
 
     return some_str_tmp # Array
   end
@@ -70,6 +65,74 @@ class NewClass
     # puts "#{some_str_tmp}"
   end
 
+  def ifaces_cluster
+    some_str = Array.new
+    whole_file = self.read_file
+    some_array_tmp = whole_file.scan(/:ClassName[\s]{1}[(]{1}gateway_cluster[)]{1}[\S\s]+?:masters/)
+    cluster_ifaces = Array.new
+
+    self.get_interfaces_members(some_array_tmp[0])
+
+    some_array_tmp.each_with_index do |cluster, i|
+      cluster_ifaces << cluster.scan(/:name[\s]{1}[(][\S]+?[)]{1}/)[0].sub!(/:name[\s]{1}[(]/, "").
+                                                                                     sub!(/[)]/, "")
+      cluster_ifaces << self.get_interfaces(cluster)
+      # cluster_ifaces << self.get_interfaces_members(cluster)
+
+      end
+    # puts cluster_ifaces
+
+  end
+
+  def get_interfaces(cluster)
+    final_array = Array.new
+    some_array_tmp = Array.new
+
+    some_array_tmp = cluster.scan(/:cluster_interface[\S\s]+?:officialname[\s]{1}[(][\S\s]+?[)]/)
+
+    some_array_tmp.each_with_index do |iface, i|
+      final_array << iface.scan(/:officialname[\S\s]+?[)]{1}/)[0].sub!(/:officialname[\s]{1}[(]/, "").sub!(/[)]{1}/, "") + "\s"
+      final_array[i] << iface.match(/:ipaddr[\S\s]+?[)]{1}/)[0].sub!(/:ipaddr[\s]{1}[(]/, "").sub!(/[)]{1}/, "") + "\s"
+      final_array[i] << iface.match(/:netmask[\S\s]+?[)]{1}/)[0].sub!(/:netmask[\s]{1}[(]/, "").sub!(/[)]{1}/, "")
+    end
+
+    return final_array
+  end
+
+  def get_interfaces_members(cluster)
+    cluster_members_names = Array.new
+    cluster_members = cluster.scan(/:cluster_members[\S\s]+?:edges/)[0]
+
+    cluster_members.scan(/:Name[\s]{1}[(][\S]+?[)]/).each do |member|
+      cluster_members_names << member.sub!(/:Name[\s][(]/, "").sub!(/[)]/, "")
+    end
+
+    self.ifaces_for_each_member(cluster_members_names)
+
+  end
+
+  def ifaces_for_each_member(cluster_members_names)
+    final_array = Array.new(2, "")
+    temp_array = Array.new
+    whole_file = self.read_file
+
+    cluster_members_names.each do |member|
+      temp_array << whole_file.scan(/:[\s]{1}[(]#{member}\W+interfaces[\S\s]+?:Machine_weight/)[0]
+    end
+
+    temp_array.each_with_index do |iface, i|
+      temp_array[i] = iface.scan(/:dual_wan[\S\s]+?:officialname[\s]{1}[()][\S\s]+?[)]/)
+    end
+
+    temp_array.each do |member|
+      member.each_with_index do |iface, i|
+        final_array[i] = iface.scan(/:officialname[\S\s]+?[)]{1}/)[0].sub!(/:officialname[\s]{1}[(]/, "").sub!(/[)]{1}/, "") + "\s\s\s"
+        #### ДОДУМЫВАТЬ
+      end
+    end
+
+  end
+
   def local_interfaces
     cluster_names = Array.new
     some_str_tmp = Array.new(2)
@@ -84,15 +147,14 @@ class NewClass
     end
     
     some_str_tmp.each do |member|
-      temp_array << member.scan(/:dual_wan[\S\s]+?:officialname[\s]{1}[()][\S\s]+?[)]/)                   # .split(/:dual_wan/)
+      temp_array << member.scan(/:dual_wan[\S\s]+?:officialname[\s]{1}[()][\S\s]+?[)]/)
     end
 
 
     temp_array.each do |members|
       some_array.clear
       members.each_with_index do |iface, y|
-        # puts iface
-        some_array << iface.scan(/:officialname[\S\s]+?[)]{1}/)[0].sub!(/:officialname[\s]{1}[(]/, "").sub!(/[)]{1}/, "") + "\s\s\s" 
+        some_array << iface.scan(/:officialname[\S\s]+?[)]{1}/)[0].sub!(/:officialname[\s]{1}[(]/, "").sub!(/[)]{1}/, "") + "\s\s\s"
         some_array[y] << iface.scan(/:ipaddr[\S\s]+?[)]{1}/)[0].sub!(/:ipaddr[\s]{1}[(]/, "").sub!(/[)]{1}/, "") + "\s\s\s" 
         some_array[y] << iface.scan(/:netmask[\S\s]+?[)]{1}/)[0].sub!(/:netmask[\s]{1}[(]/, "").sub!(/[)]{1}/, "") + "\s\s\s" 
         cluster_names << some_array[y]
@@ -100,12 +162,6 @@ class NewClass
    end
 
     puts cluster_names
-
-
-    # self.to_file(some_str_tmp)
-    # puts "#{whole_file.scan(/:[\s]{1}[(]#{self.cl_name[0]}[\S\s]+?:interfaces[\S\s]+?:Machine_weight/)[0]}"
-    # puts "#{whole_file.scan(/:[\s]{1}[(]#{self.cl_name[1]}[\S\s]+?:interfaces[\S\s]+?:Machine_weight/)}"
-
   end
 
   def to_file(some_str)
@@ -118,7 +174,7 @@ class NewClass
 
   def cluster
     # self.to_file(self.cl_name)
-    self.cl_interfaces
+    self.ifaces_cluster
     # self.cl_name
     # self.local_interfaces
     # puts "#{self.cl_name[0]} \n"
@@ -127,6 +183,5 @@ class NewClass
 
 end
 
-
-new_cluster = NewClass.new("C:\\_ruby\\cpinfo_srv-rspd-mgmt-1") #//home//asd//ruby_theory//cpinfo_chepucks.info")   # aaa
+new_cluster = NewClass.new("C:\\_ruby\\cpinfo_srv-rspd-mgmt-1") #//home//asd//ruby_theory//cpinfo_chepucks.info")
 new_cluster.cluster

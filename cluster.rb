@@ -4,11 +4,13 @@ class NewClass
 
   def initialize(filename)
     @filename = filename
+    f = File.open(@filename, "r")
+    @@whole_file = f.read.encode!('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: '')
   end
 
   def read_file
     f = File.open(@filename, "r")
-    whole_file = f.read
+    @@whole_file = f.read
     # puts whole_file.class
 
     return whole_file.encode!('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: '')
@@ -67,20 +69,19 @@ class NewClass
 
   def ifaces_cluster
     some_str = Array.new
-    whole_file = self.read_file
-    some_array_tmp = whole_file.scan(/:ClassName[\s]{1}[(]{1}gateway_cluster[)]{1}[\S\s]+?:masters/)
+    # whole_file = self.read_file
+    some_array_tmp = @@whole_file.scan(/:ClassName[\s]{1}[(]{1}gateway_cluster[)]{1}[\S\s]+?:masters/)
     cluster_ifaces = Array.new
-
-    self.get_interfaces_members(some_array_tmp[0])
-
+    cluster_member_ifaces = Array.new
     some_array_tmp.each_with_index do |cluster, i|
       cluster_ifaces << cluster.scan(/:name[\s]{1}[(][\S]+?[)]{1}/)[0].sub!(/:name[\s]{1}[(]/, "").
                                                                                      sub!(/[)]/, "")
       cluster_ifaces << self.get_interfaces(cluster)
-      # cluster_ifaces << self.get_interfaces_members(cluster)
+      cluster_member_ifaces << self.get_interfaces_members(cluster)
+    end
 
-      end
-    # puts cluster_ifaces
+    self.to_file(cluster_ifaces)
+    self.to_file(cluster_member_ifaces)
 
   end
 
@@ -100,6 +101,7 @@ class NewClass
   end
 
   def get_interfaces_members(cluster)
+    cluster_members_names_final = Array.new
     cluster_members_names = Array.new
     cluster_members = cluster.scan(/:cluster_members[\S\s]+?:edges/)[0]
 
@@ -107,30 +109,39 @@ class NewClass
       cluster_members_names << member.sub!(/:Name[\s][(]/, "").sub!(/[)]/, "")
     end
 
-    self.ifaces_for_each_member(cluster_members_names)
+    cluster_members_names_final = cluster_members_names.zip(self.ifaces_for_each_member(cluster_members_names))
+    return cluster_members_names_final
 
   end
 
   def ifaces_for_each_member(cluster_members_names)
-    final_array = Array.new(2, "")
-    temp_array = Array.new
-    whole_file = self.read_file
-
+    final_array = [[], []]
+    temp_array = []
+    # puts cluster_members_names
     cluster_members_names.each do |member|
-      temp_array << whole_file.scan(/:[\s]{1}[(]#{member}\W+interfaces[\S\s]+?:Machine_weight/)[0]
+      temp_array << @@whole_file.scan(/:[\s]{1}[(]#{member}\W+interfaces[\S\s]+?:Machine_weight/)[0]
+    end
+
+    if temp_array[0].nil?
+      # puts "HAHAHAH"
+      cluster_members_names.each_with_index do |member, i|
+        temp_array[i] = @@whole_file.scan(/:[\s]{1}[(]#{member}\W+certificates[\S\s]+?:Machine_weight/)[0]
+      end
     end
 
     temp_array.each_with_index do |iface, i|
       temp_array[i] = iface.scan(/:dual_wan[\S\s]+?:officialname[\s]{1}[()][\S\s]+?[)]/)
     end
-
-    temp_array.each do |member|
-      member.each_with_index do |iface, i|
-        final_array[i] = iface.scan(/:officialname[\S\s]+?[)]{1}/)[0].sub!(/:officialname[\s]{1}[(]/, "").sub!(/[)]{1}/, "") + "\s\s\s"
-        #### ДОДУМЫВАТЬ
+    temp_array.each_with_index do |member, i|
+      member.each_with_index do |iface, y|
+        final_array[i][y] = iface.scan(/:officialname[\S\s]+?[)]{1}/)[0].sub!(/:officialname[\s]{1}[(]/, "").
+            sub!(/[)]{1}/, "") + "\s"
+        final_array[i][y] << iface.scan(/:ipaddr[\S\s]+?[)]{1}/)[0].sub!(/:ipaddr[\s]{1}[(]/, "").sub!(/[)]{1}/, "") + "\s"
+        final_array[i][y] << iface.scan(/:netmask[\S\s]+?[)]{1}/)[0].sub!(/:netmask[\s]{1}[(]/, "").sub!(/[)]{1}/, "")
       end
     end
 
+    return final_array
   end
 
   def local_interfaces
@@ -174,10 +185,10 @@ class NewClass
 
   def cluster
     # self.to_file(self.cl_name)
+    # cluster_members_names = ["fw-asu-konstlpu-1", "fw-asu-konstlpu-2"]
+    # self.ifaces_for_each_member(cluster_members_names)
     self.ifaces_cluster
     # self.cl_name
-    # self.local_interfaces
-    # puts "#{self.cl_name[0]} \n"
   end
 
 

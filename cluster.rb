@@ -5,9 +5,8 @@ class NewClass
   def initialize(filename)
     @filename = filename
     @@whole_file = IO.read(@filename)
-    @@spreadsheet_file = RubyXL::Parser.parse("C:\\_ruby\\some_file.xlsx")
-    @@spreadsheet_file_sheet = @@spreadsheet_file.worksheets[0]
-    
+    # @@spreadsheet_file = RubyXL::Parser.parse("C:\\_ruby\\some_file.xlsx")  - for excel files only
+    # @@spreadsheet_file_sheet = @@spreadsheet_file.worksheets[0] - for excel files only
   end
 
 # ifaces_cluster - get interfaces for each cluster and cluster members
@@ -27,6 +26,7 @@ class NewClass
     self.to_file(cluster_ifaces)
   end
 
+# getting ifaces for each cluster object only
   def get_interfaces(cluster)
     final_array = Array.new
     some_array_tmp = Array.new
@@ -65,20 +65,22 @@ class NewClass
 # Temp
   end
 
+# getting ifaces for each cluster member
   def get_interfaces_members(cluster)
     cluster_members_names_final = Array.new
     cluster_members_names = Array.new
     cluster_members = cluster.scan(/:cluster_members[\S\s]+?:edges/)[0]
-
+# searching for cluster members names
     cluster_members.scan(/:Name[\s]{1}[(][\S]+?[)]/).each do |member|
       cluster_members_names.push(member.sub!(/:Name[\s][(]/, "").sub!(/[)]/, ""))
     end
-
+# get ifaces for each cluster member separately
     cluster_members_names_final = cluster_members_names.zip(self.get_ifaces_for_each_member(cluster_members_names))
     return cluster_members_names_final
 
   end
 
+#getting ifaces for each cluster member name which was obtained from get_interfaces_members method
   def get_ifaces_for_each_member(cluster_members_names)
     final_array = [[], []]
     temp_array = []
@@ -102,7 +104,6 @@ class NewClass
       end
     end
 
-    # puts "#{final_array}"
     return final_array
   end
 

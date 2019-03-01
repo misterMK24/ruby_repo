@@ -5,7 +5,7 @@ class Log_parse
     match_result_array = []
     i = 0
     begin
-      File.open('/mnt/c/_ruby/log_in_ascii.txt', 'r') do |f|      # C:\_ruby\log_in_ascii.txt
+      File.open('C:\_ruby\log_in_ascii.txt', 'r') do |f|      # /mnt/c/_ruby/log_in_ascii.txt
         count = f.size
         f.each do |line|
           check_migrate_rule = line.match(/.*migrate rule.*/)
@@ -22,35 +22,38 @@ class Log_parse
   end
 
   def to_file(match_result_array)
-    File.open('/mnt/c/_ruby/results.txt', 'w') do |file|                # C:\_ruby\results.txt
+    File.open('C:\_ruby\results_s.txt', 'w') do |file|                # /mnt/c/_ruby/results.txt
       match_result_array.each do |line|
-        file.puts(line)
+        file.write(line)
+        file.write("\n")
       end
     end
   end
 
-# method to parse each line to get source_ip, dst_ip and service.
+# method to parse each line to get source_ip, dst_ip, proto and service.
   def migrate_rule
     test_array = []
-    source_ip_array = []
-    dst_ip_array = []
-    service_array = []
-
-    File.open('/mnt/c/_ruby/results.txt', 'r') do |file|
-      file.each_with_index do |line, i|
-        test_array[i] = line.split(";")
-        source_ip_array[i] = test_array[i][16]
-        dst_ip_array[i] = test_array[i][17]
-        service_array[i] = "#{test_array[i][18]} #{test_array[i][19]}"
-        puts i
+    final_array = []
+    File.open('C:\_ruby\results.txt', 'r') do |f|
+      f.each_with_index do |line, i|
+        test_array[0] = line.split(";")
+        final_array[i] = test_array[0][16] + "\s"
+        final_array[i] << test_array[0][17] + "\s"
+        final_array[i] << "#{test_array[0][18]} #{test_array[0][19]}"
       end
     end
-
+    puts "end"
+    to_file(final_array)
   end
 
-
+  def save_to_db
+    
+    
+    
+  end
 
 end
 
-
-ins_log_parse = Log_parse.new.migrate_rule          # file_open
+ins_log_parse = Log_parse.new
+# ins_log_parse.file_open
+ins_log_parse.migrate_rule          # file_open

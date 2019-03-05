@@ -1,4 +1,5 @@
 require 'RubyXL'
+require 'logger'
 
 class Log_parse
   attr_accessor :input_filename, :output_filename, :result_filename
@@ -36,23 +37,29 @@ class Log_parse
     proto = []
     service_port = []
     final_array = []
+    y = 0
 
     File.open(@output_filename, 'r') do |f|
       f.each_with_index do |line, i|
-        test_array = line.split(";")
-        src_ip[i] = test_array[16]
-        dst_ip[i] = test_array[17]
-        proto[i] = test_array[18]
-        service_port[i] = test_array[19]
+        test_array = line.split(",")                           # line.split(";")
+        src_ip[i] = test_array[2]
+        dst_ip[i] = test_array[3]
+        proto[i] = test_array[4]
+        if test_array[5].eql?("\n")
+          next
+        else
+          service_port[y] = test_array[5]
+          y += 1
+        end
       end
     end
     puts "Done parse operation"
-    src_ip.uniq!
-    dst_ip.uniq!
-    proto.uniq!
-    service_port.uniq!.sort!
+    src_ip.uniq!.sort!
+    dst_ip.uniq!.sort!
+    proto.uniq!.sort!
+    service_port_sorted = service_port.uniq!.sort_by {|element| element.to_i}
     puts "Done uniq! operation"
-    to_excel_file(src_ip, dst_ip, proto, service_port)
+    to_excel_file(src_ip, dst_ip, proto, service_port_sorted)
   end
 
   def to_file(match_result_array)
@@ -98,5 +105,5 @@ ins_log_parse = Log_parse.new
 ins_log_parse.input_filename = 'C:\_old_PC\ГП ТГ Казань\2019\kszi_logs\01_02_2019.txt'
 ins_log_parse.output_filename = 'C:\_old_PC\ГП ТГ Казань\2019\kszi_logs\output_01_02_2019.txt'
 ins_log_parse.result_filename = 'C:\_old_PC\ГП ТГ Казань\2019\kszi_logs\results.xlsx'
-ins_log_parse.initial_file_parsing
+# ins_log_parse.initial_file_parsing
 ins_log_parse.get_src_dst_proto_port

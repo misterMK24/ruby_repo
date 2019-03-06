@@ -8,6 +8,7 @@ class Log_parse
     match_result_array = []
     i = 0
     @input_filename.each do |filename|
+      self.output_filename = @dir + 'output_' + filename
       begin
         puts "current filename is: #{filename}"
         File.open(@dir + filename, 'r') do |f|      # /mnt/c/_ruby/log_in_ascii.txt
@@ -19,7 +20,8 @@ class Log_parse
             end
           end  
         end
-        to_file(match_result_array)
+        test_get_src_dst_proto_port(match_result_array)
+#        to_file(match_result_array)
         match_result_array.clear
         i = 0
         puts "parsing for #{filename} has ended"
@@ -28,29 +30,37 @@ class Log_parse
       end
     end
 #    to_file(match_result_array)
- #  begin
- #    if @input_filename.empty?
- #      return puts "Check :input_filename variable !!!"
- #    else
- #      puts "current filename is: #{@input_filename}"
- #      File.open(@input_filename, 'r') do |f|      # /mnt/c/_ruby/log_in_ascii.txt
- #        count = f.size
- #        f.each do |line|
- #          check_migrate_rule = line.match(/.*migrate rule.*/)
- #          if check_migrate_rule
- #              match_result_array[i] = check_migrate_rule[0]
- #              i += 1
- #          end
- #        end  
- #      end
- #      puts "initial parsing has ended"
- #    end
- #  rescue EOFError
- #    # finish to read file
- #  end
- #   to_file(match_result_array) # save result to the file 
   end
 
+  def test_get_src_dst_proto_port(match_result_array)
+    src_ip = []
+    dst_ip = []
+    proto = []
+    service_port = []
+    final_array = []
+    y = 0
+
+    match_result_array.each_with_index do |each_log|
+      test_array = each_log.split(",")                           
+      src_ip[i] = test_array[2]
+      dst_ip[i] = test_array[3]
+      proto[i] = test_array[4]
+      if test_array[5].eql?("\n")
+        next
+      else
+        service_port[y] = test_array[5]
+        y += 1
+      end
+    end
+    puts "Done parse operation"
+    src_ip.uniq!.sort!
+    dst_ip.uniq!.sort!
+    proto.uniq!.sort!
+    service_port_sorted = service_port.uniq!.sort_by {|element| element.to_i}
+    puts "Done uniq! operation"
+    
+  end
+  
 # method to parse each line to get source_ip, dst_ip, proto and service.
   def get_src_dst_proto_port
     src_ip = []
@@ -62,7 +72,7 @@ class Log_parse
 
     File.open(@output_filename, 'r') do |f|
       f.each_with_index do |line, i|
-        test_array = line.split(",")                           # line.split(";")
+        test_array = line.split(",")                           
         src_ip[i] = test_array[2]
         dst_ip[i] = test_array[3]
         proto[i] = test_array[4]
@@ -134,7 +144,9 @@ ins_log_parse.input_filename =
   '24_02_2019.txt', '26_02_2019.txt',
   '28_02_2019.txt'
 ]
-ins_log_parse.output_filename = 'C:\_old_PC\ГП ТГ Казань\2019\kszi_logs\output_02_2019.txt'
+
+
+# ins_log_parse.output_filename = 'C:\_old_PC\ГП ТГ Казань\2019\kszi_logs\output_02_2019.txt'
 ins_log_parse.result_filename = 'C:\_old_PC\ГП ТГ Казань\2019\kszi_logs\results.xlsx'
 ins_log_parse.initial_file_parsing
 # ins_log_parse.get_src_dst_proto_port

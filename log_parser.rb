@@ -56,7 +56,7 @@ class Log_parse
     src_ip.uniq!.sort!
     dst_ip.uniq!.sort!
     proto.uniq!.sort!
-    service_port_sorted = service_port.uniq!.sort_by {|element| element.to_i}
+    service_port_sorted = service_port.uniq!.sort_by { |element| element.to_i }
     puts "Done uniq! operation"
     
   end
